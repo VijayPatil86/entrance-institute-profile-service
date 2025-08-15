@@ -35,7 +35,7 @@ public class ProfileServiceImplTest {
 	void test_createStudentProfile_ExistingProfile_Raise_IllegalArgumentException() {
 		when(mockStudentProfileRepository.existsById(anyLong())).thenReturn(true);
 		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-				() -> profileServiceImpl.createStudentProfile(1L, ProfileRequestDTO.builder().build()));
+				() -> profileServiceImpl.saveProfile(1L, ProfileRequestDTO.builder().build()));
 		verify(mockStudentProfileRepository).existsById(anyLong());
 		assertTrue(ex.getMessage().equals("Student profile with id " + 1L + " already exists."));
 	}
@@ -78,7 +78,7 @@ public class ProfileServiceImplTest {
 				.percentage(dto.getPercentage())
 				.build();
 		when(mockStudentProfileRepository.save(any(StudentProfile.class))).thenReturn(expectedSavedStudentProfile);
-		profileServiceImpl.createStudentProfile(userId, dto);
+		profileServiceImpl.saveProfile(userId, dto);
 		verify(mockStudentProfileRepository).existsById(anyLong());
 
 		ArgumentCaptor<StudentProfile> argCaptorStudentProfile =
