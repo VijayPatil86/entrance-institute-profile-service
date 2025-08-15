@@ -13,8 +13,8 @@ import com.neec.filter.JwtAuthenticationFilter;
 @Configuration
 public class SecurityConfig {
 	static final private String[] PROFILE_ENDPOINTS = {
-			"/api/v1/profile",
-			"/api/v1/profile/me"
+			"/api/v1/profiles",
+			"/api/v1/profiles/me"
 	};
 
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
