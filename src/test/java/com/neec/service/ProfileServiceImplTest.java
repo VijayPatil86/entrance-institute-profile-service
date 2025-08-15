@@ -24,10 +24,14 @@ import com.neec.entity.UserLogin;
 import com.neec.enums.EnumGender;
 import com.neec.repository.StudentProfileRepository;
 
+import jakarta.persistence.EntityManager;
+
 @ExtendWith(MockitoExtension.class)
 public class ProfileServiceImplTest {
 	@Mock
 	private StudentProfileRepository mockStudentProfileRepository;
+	@Mock
+	private EntityManager mockEntityManager;
 	@InjectMocks
 	private ProfileServiceImpl profileServiceImpl;
 
@@ -43,6 +47,8 @@ public class ProfileServiceImplTest {
 	@Test
 	void test_createStudentProfile_NonExistingProfile_Save() {
 		when(mockStudentProfileRepository.existsById(anyLong())).thenReturn(false);
+		UserLogin userLogin = UserLogin.builder().userLoginId(1L).build();
+		when(mockEntityManager.getReference(UserLogin.class, 1L)).thenReturn(userLogin);
 		long userId = 1L;
 		ProfileRequestDTO dto = ProfileRequestDTO.builder()
 				.firstName("John")
@@ -61,7 +67,7 @@ public class ProfileServiceImplTest {
 				.percentage(new BigDecimal(65.20))
 				.build();
 		StudentProfile expectedSavedStudentProfile = StudentProfile.builder()
-				.userLogin(UserLogin.builder().userLoginId(userId).build())
+				.userLogin(userLogin)
 				.firstName(dto.getFirstName())
 				.lastName(dto.getLastName())
 				.dateOfBirth(dto.getDateOfBirth())
@@ -80,6 +86,7 @@ public class ProfileServiceImplTest {
 		when(mockStudentProfileRepository.save(any(StudentProfile.class))).thenReturn(expectedSavedStudentProfile);
 		profileServiceImpl.saveProfile(userId, dto);
 		verify(mockStudentProfileRepository).existsById(anyLong());
+		verify(mockEntityManager).getReference(UserLogin.class, 1L);
 
 		ArgumentCaptor<StudentProfile> argCaptorStudentProfile =
 				ArgumentCaptor.forClass(StudentProfile.class);
