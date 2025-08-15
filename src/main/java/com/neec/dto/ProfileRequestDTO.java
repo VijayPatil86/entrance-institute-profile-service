@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.neec.enums.EnumGender;
+import com.neec.validation.annotation.ExamPassingYear;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -57,7 +58,7 @@ public class ProfileRequestDTO {
 	@NotBlank(message = "pin code is required")
 	@Size(min = 6, max = 6, message = "pin code must have exactly 6 digits")
 	@Digits(fraction = 0, integer = 6, message = "pin code must have exactly 6 digits")
-	@Pattern(regexp = "^[0-9]{6}$")
+	@Pattern(regexp = "^[0-9]{6}$", message = "pin code must have exactly 6 digits")
 	String pinCode;
 
 	@NotBlank(message = "school name is required")
@@ -67,6 +68,7 @@ public class ProfileRequestDTO {
 	String boardName;
 
 	@Positive(message = "year of passing can not be negative")
+	@ExamPassingYear
 	short yearOfPassing;
 
 	@NotNull(message = "percetage value can not be null")
