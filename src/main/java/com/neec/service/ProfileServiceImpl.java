@@ -1,25 +1,36 @@
 package com.neec.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.neec.dto.ProfileRequestDTO;
 import com.neec.entity.StudentProfile;
 import com.neec.entity.UserLogin;
 import com.neec.repository.StudentProfileRepository;
 
+import io.micrometer.observation.annotation.Observed;
+import jakarta.persistence.EntityManager;
+
+@Service
+@Transactional
 public class ProfileServiceImpl implements ProfileService {
+	private EntityManager entityManager;
 	private StudentProfileRepository studentProfileRepository;
 
-	public ProfileServiceImpl(StudentProfileRepository studentProfileRepository) {
+	public ProfileServiceImpl(StudentProfileRepository studentProfileRepository,
+			EntityManager entityManager) {
 		this.studentProfileRepository = studentProfileRepository;
+		this.entityManager = entityManager;
 	}
 
+	@Observed(contextualName = "spanProfileServiceSaveProfile")
 	@Override
-	public void createStudentProfile(long userId, ProfileRequestDTO dto) {
+	public void saveProfile(long userId, ProfileRequestDTO dto) {
 		if(studentProfileRepository.existsById(userId)) {
 			throw new IllegalArgumentException("Student profile with id " + userId + " already exists.");
 		}
-		UserLogin userLogin = UserLogin.builder()
-				.userLoginId(userId)
-				.build();
+		UserLogin userLogin = entityManager.getReference(UserLogin.class, userId);
+
 		StudentProfile studentProfile = StudentProfile.builder()
 				.userLogin(userLogin)
 				.firstName(dto.getFirstName())
@@ -39,5 +50,4 @@ public class ProfileServiceImpl implements ProfileService {
 				.build();
 		StudentProfile savedStudentProfile = studentProfileRepository.save(studentProfile);
 	}
-
 }
