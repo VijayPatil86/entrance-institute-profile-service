@@ -3,6 +3,7 @@ package com.neec.controller;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -29,7 +30,7 @@ public class ProfileController {
 	}
 
 	@Observed(contextualName = "spanProfileControllerSaveProfile")
-	@PostMapping
+	@PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
 	ResponseEntity<?> saveProfile(@Valid @RequestBody ProfileRequestDTO dto, @AuthenticationPrincipal CustomPrincipal customPrincipal){
 		Long userId = Long.valueOf(customPrincipal.getSubject());
 		profileService.saveProfile(userId, dto);
