@@ -18,7 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.neec.dto.ProfileRequestDTO;
+import com.neec.dto.ProfileDTO;
 import com.neec.entity.StudentProfile;
 import com.neec.entity.UserLogin;
 import com.neec.enums.EnumGender;
@@ -39,7 +39,7 @@ public class ProfileServiceImplTest {
 	void test_createStudentProfile_ExistingProfile_Raise_IllegalArgumentException() {
 		when(mockStudentProfileRepository.existsById(anyLong())).thenReturn(true);
 		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-				() -> profileServiceImpl.saveProfile(1L, ProfileRequestDTO.builder().build()));
+				() -> profileServiceImpl.saveProfile(1L, ProfileDTO.builder().build()));
 		verify(mockStudentProfileRepository).existsById(anyLong());
 		assertTrue(ex.getMessage().equals("Student profile with id " + 1L + " already exists."));
 	}
@@ -50,7 +50,7 @@ public class ProfileServiceImplTest {
 		UserLogin userLogin = UserLogin.builder().userLoginId(1L).build();
 		when(mockEntityManager.getReference(UserLogin.class, 1L)).thenReturn(userLogin);
 		long userId = 1L;
-		ProfileRequestDTO dto = ProfileRequestDTO.builder()
+		ProfileDTO dto = ProfileDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(1985, 10, 11))
