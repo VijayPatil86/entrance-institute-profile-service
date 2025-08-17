@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,5 +45,12 @@ public class ProfileController {
 		Long userId = Long.valueOf(customPrincipal.getSubject());
 		ProfileResponseDTO profileResponseDTO = profileService.getProfileByUserId(userId);
 		return ResponseEntity.ok(profileResponseDTO);
+	}
+
+	@PutMapping("/me")
+	ResponseEntity<?> updateProfile(@Valid @RequestBody ProfileRequestDTO dto, @AuthenticationPrincipal CustomPrincipal customPrincipal){
+		Long userId = Long.valueOf(customPrincipal.getSubject());
+		profileService.updateProfile(userId, dto);
+		return ResponseEntity.ok(Map.of("status", "Student Profile is updated"));
 	}
 }
