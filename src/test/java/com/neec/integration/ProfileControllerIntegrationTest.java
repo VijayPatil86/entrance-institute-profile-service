@@ -26,7 +26,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.neec.dto.ProfileRequestDTO;
+import com.neec.dto.ProfileDTO;
 import com.neec.enums.EnumGender;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -45,7 +45,7 @@ public class ProfileControllerIntegrationTest {
 	@Order(1)
 	@Test
 	void test_saveProfile_New() throws Exception {
-		ProfileRequestDTO dto = ProfileRequestDTO.builder()
+		ProfileDTO dto = ProfileDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(1985, 10, 11))
@@ -75,7 +75,7 @@ public class ProfileControllerIntegrationTest {
 	@Test
 	void test_saveProfile_Again() throws Exception {
 		Long userId = 102L;
-		ProfileRequestDTO dto = ProfileRequestDTO.builder()
+		ProfileDTO dto = ProfileDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(1985, 10, 11))
@@ -101,7 +101,7 @@ public class ProfileControllerIntegrationTest {
 		assertTrue(jsonNode.get("error").asText().equals("Student profile with id " + userId + " already exists."));
 	}
 
-	private String toJsonString(ProfileRequestDTO dto) throws JsonProcessingException {
+	private String toJsonString(ProfileDTO dto) throws JsonProcessingException {
 		return objectMapper.writeValueAsString(dto);
 	}
 
