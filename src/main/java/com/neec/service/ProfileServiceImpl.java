@@ -77,4 +77,26 @@ public class ProfileServiceImpl implements ProfileService {
 				.build();
 		return profileDTO;
 	}
+
+	@Transactional
+	@Observed(name = "profile.service.update.profile", contextualName = "update student profile")
+	@Override
+	public void updateProfile(Long userId, ProfileRequestDTO dto) {
+		StudentProfile profile = studentProfileRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("Student profile with id " + userId + " does not exist."));
+		profile.setFirstName(dto.getFirstName());
+		profile.setLastName(dto.getLastName());
+		profile.setDateOfBirth(dto.getDateOfBirth());
+		profile.setGender(dto.getGender());
+		profile.setPhoneNumber(dto.getPhoneNumber());
+		profile.setAddressLine1(dto.getAddressLine1());
+		profile.setAddressLine2(dto.getAddressLine2());
+		profile.setCity(dto.getCity());
+		profile.setState(dto.getState());
+		profile.setPinCode(dto.getPinCode());
+		profile.setSchoolName(dto.getSchoolName());
+		profile.setBoardName(dto.getBoardName());
+		profile.setYearOfPassing(dto.getYearOfPassing());
+		studentProfileRepository.save(profile);
+	}
 }
