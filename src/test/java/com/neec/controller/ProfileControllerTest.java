@@ -9,10 +9,17 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +29,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -36,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neec.config.SecurityConfig;
 import com.neec.dto.CustomPrincipal;
 import com.neec.dto.ProfileRequestDTO;
+import com.neec.dto.ProfileResponseDTO;
 import com.neec.enums.EnumGender;
 import com.neec.service.ProfileService;
 import com.neec.util.JwtUtil;
@@ -199,6 +210,81 @@ public class ProfileControllerTest {
 		assertEquals(HttpStatus.BAD_REQUEST.value(), result.getResponse().getStatus());
 		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
 		assertTrue(jsonNode.get("error").asText().equals("Student profile with id " + userId + " already exists."));
+	}
+
+	@Test
+	void test_getProfile_NonExisting_UserId() throws Exception {
+		Long nonExistingUserId = 999L;
+		CustomPrincipal customPrincipal = CustomPrincipal.builder()
+				.subject(String.valueOf(nonExistingUserId))
+				.emailAddress("test@gmail.com")
+				.build();
+		TestingAuthenticationToken testingAuthenticationToken =
+				new TestingAuthenticationToken(customPrincipal, null);
+		SecurityContextHolder.getContext().setAuthentication(testingAuthenticationToken);
+		when(mockProfileService.getProfileByUserId(nonExistingUserId))
+			.thenThrow(new IllegalArgumentException("Student profile with id " + nonExistingUserId + " does not exist."));
+		RequestBuilder request = MockMvcRequestBuilders.get("/api/v1/profiles/me");
+		MvcResult result = mockMvc.perform(request)
+				.andDo(print())
+				.andReturn();
+		verify(mockProfileService).getProfileByUserId(nonExistingUserId);
+		assertEquals(HttpStatus.BAD_REQUEST.value(), result.getResponse().getStatus());
+		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
+		assertTrue(jsonNode.get("error").asText().equals("Student profile with id 999 does not exist."));
+	}
+
+	@Test
+	void test_getProfile_Existing_UserId() throws Exception {
+		Long userId = 1L;
+		ProfileResponseDTO responseDTO = ProfileResponseDTO.builder()
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1985, 10, 11))
+				.gender(EnumGender.M)
+				.phoneNumber("9876543210")
+				.addressLine1("123 Main St")
+				.addressLine2("Apt 4B")
+				.city("New York")
+				.state("NY")
+				.pinCode("415236")
+				.schoolName("XYZ High School")
+				.boardName("CBSE")
+				.yearOfPassing((short)2000)
+				.percentage(new BigDecimal(65.20))
+				.studentProfileId(userId)
+				.build();
+		CustomPrincipal customPrincipal = CustomPrincipal.builder()
+				.subject(String.valueOf(userId))
+				.build();
+		TestingAuthenticationToken token =
+				new TestingAuthenticationToken(customPrincipal, null, List.of(new SimpleGrantedAuthority("APPLICANT")));
+		SecurityContextHolder.getContext().setAuthentication(token);
+		when(mockProfileService.getProfileByUserId(anyLong())).thenReturn(responseDTO);
+		RequestBuilder request = MockMvcRequestBuilders.get("/api/v1/profiles/me");
+		MvcResult result = mockMvc.perform(request)
+				.andDo(print())
+				.andReturn();
+		verify(mockProfileService).getProfileByUserId(anyLong());
+		assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus());
+		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
+		assertTrue(jsonNode.get("studentProfileId").asText().equals(responseDTO.getStudentProfileId().toString()));
+		assertTrue(jsonNode.get("firstName").asText().equals(responseDTO.getFirstName()));
+		assertTrue(jsonNode.get("lastName").asText().equals(responseDTO.getLastName()));
+		assertTrue(jsonNode.get("dateOfBirth").asText().equals(responseDTO.getDateOfBirth().toString()));
+		assertTrue(jsonNode.get("gender").asText().equals(responseDTO.getGender().toString()));
+		assertTrue(jsonNode.get("phoneNumber").asText().equals(responseDTO.getPhoneNumber()));
+		assertTrue(jsonNode.get("addressLine1").asText().equals(responseDTO.getAddressLine1()));
+		assertTrue(jsonNode.get("addressLine2").asText().equals(responseDTO.getAddressLine2()));
+		assertTrue(jsonNode.get("city").asText().equals(responseDTO.getCity()));
+		assertTrue(jsonNode.get("state").asText().equals(responseDTO.getState()));
+		assertTrue(jsonNode.get("pinCode").asText().equals(responseDTO.getPinCode()));
+		assertTrue(jsonNode.get("schoolName").asText().equals(responseDTO.getSchoolName()));
+		assertTrue(jsonNode.get("boardName").asText().equals(responseDTO.getBoardName()));
+		assertTrue(jsonNode.get("yearOfPassing").asText().equals(String.valueOf(responseDTO.getYearOfPassing())));
+		BigDecimal expected = new BigDecimal(65.2).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal actual = new BigDecimal(jsonNode.get("percentage").asText()).setScale(2, RoundingMode.HALF_UP);
+		assertEquals(expected, actual);
 	}
 
 	private JsonNode toJsonNode(String jsonString) throws JsonMappingException, JsonProcessingException {
