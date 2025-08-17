@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.neec.dto.ProfileRequestDTO;
+import com.neec.dto.ProfileResponseDTO;
 import com.neec.entity.StudentProfile;
 import com.neec.entity.UserLogin;
 import com.neec.enums.EnumGender;
@@ -96,5 +98,58 @@ public class ProfileServiceImplTest {
 		assertEquals("John", toSaveStudentProfile.getFirstName());
 		assertEquals("Doe", toSaveStudentProfile.getLastName());
 		assertEquals("9876543210", toSaveStudentProfile.getPhoneNumber());
+	}
+
+	@Test
+	void test_getProfileForUserId_NonExisting_UserId() {
+		Long userId = 999L;
+		when(mockStudentProfileRepository.findById(anyLong()))
+			.thenReturn(Optional.empty());
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> profileServiceImpl.getProfileByUserId(userId));
+		verify(mockStudentProfileRepository).findById(anyLong());
+		assertTrue(ex.getMessage().equals("Student profile with id " + userId + " does not exist."));
+	}
+
+	@Test
+	void test_getProfileForUserId_Existing_UserId() {
+		Long userId = 1L;
+		UserLogin userLogin = UserLogin.builder()
+				.userLoginId(userId)
+				.emailAddress("test@gmail.com")
+				.build();
+		StudentProfile profile = StudentProfile.builder()
+				.studentProfileId(userId)
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1980, 01, 01))
+				.city("New York")
+				.state("New York")
+				.pinCode("415236")
+				.addressLine1("ABC Road")
+				.boardName("ABC Board")
+				.gender(EnumGender.M)
+				.percentage(BigDecimal.valueOf(65.30))
+				.phoneNumber("9876543210")
+				.schoolName("ABC School")
+				.userLogin(userLogin)
+				.build();
+		when(mockStudentProfileRepository.findById(anyLong())).thenReturn(Optional.of(profile));
+		ProfileResponseDTO responseDTO = profileServiceImpl.getProfileByUserId(userId);
+		verify(mockStudentProfileRepository).findById(anyLong());
+		assertEquals(userId, responseDTO.getStudentProfileId());
+		assertEquals(profile.getFirstName(), responseDTO.getFirstName());
+		assertEquals(profile.getLastName(), responseDTO.getLastName());
+		assertEquals(profile.getDateOfBirth(), responseDTO.getDateOfBirth());
+		assertEquals(profile.getCity(), responseDTO.getCity());
+		assertEquals(profile.getState(), responseDTO.getState());
+		assertEquals(profile.getPinCode(), responseDTO.getPinCode());
+		assertEquals(profile.getAddressLine1(), responseDTO.getAddressLine1());
+		assertEquals(profile.getBoardName(), responseDTO.getBoardName());
+		assertEquals(profile.getGender(), responseDTO.getGender());
+		assertEquals(profile.getPercentage(), responseDTO.getPercentage());
+		assertEquals(profile.getPhoneNumber(), responseDTO.getPhoneNumber());
+		assertEquals(profile.getSchoolName(), responseDTO.getSchoolName());
+		assertEquals(profile.getUserLogin().getEmailAddress(), responseDTO.getEmail());
 	}
 }
