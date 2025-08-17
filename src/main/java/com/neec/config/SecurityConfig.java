@@ -17,6 +17,12 @@ public class SecurityConfig {
 			"/api/v1/profiles/me"
 	};
 
+	static final private String[] PUBLIC_ENDPOINTS = {
+			"/actuator",
+			"/actuator/**",
+			"/actuator/prometheus"
+	};
+
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -28,7 +34,9 @@ public class SecurityConfig {
 		return
 		httpSecurity.cors(Customizer.withDefaults())
 			.csrf(csrf -> csrf.disable())
-			.authorizeHttpRequests(auth -> auth.requestMatchers(PROFILE_ENDPOINTS).hasAuthority("APPLICANT"))
+			.authorizeHttpRequests(auth -> auth
+					.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+					.requestMatchers(PROFILE_ENDPOINTS).hasAuthority("APPLICANT"))
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 			.build();
