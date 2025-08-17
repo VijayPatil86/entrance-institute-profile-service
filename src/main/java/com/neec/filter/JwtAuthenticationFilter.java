@@ -89,4 +89,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		jsonNodeError.put("error", errorMessage);
 		return jsonNodeError.toString();
 	}
+
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+		return request.getRequestURI().startsWith("/actuator");
+	}
 }
