@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -279,6 +280,87 @@ public class ProfileControllerTest {
 		BigDecimal expected = new BigDecimal(65.2).setScale(2, RoundingMode.HALF_UP);
 		BigDecimal actual = new BigDecimal(jsonNode.get("percentage").asText()).setScale(2, RoundingMode.HALF_UP);
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void test_updateProfile_NonExisting_UserId() throws Exception {
+		Long nonExistingUserId = 1001L;
+		CustomPrincipal customPrincipal = CustomPrincipal.builder()
+				.subject(String.valueOf(nonExistingUserId))
+				.build();
+		List<GrantedAuthority> grantedAuthority =
+				List.of(new SimpleGrantedAuthority("APPLICANT"));
+		TestingAuthenticationToken token =
+				new TestingAuthenticationToken(customPrincipal, null, grantedAuthority);
+		SecurityContextHolder.getContext().setAuthentication(token);
+		doThrow(new IllegalArgumentException("Student profile with id " + nonExistingUserId + " does not exist."))
+			.when(mockProfileService).updateProfile(anyLong(), any(ProfileRequestDTO.class));
+		ProfileRequestDTO requestDTO = ProfileRequestDTO.builder()
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1985, 10, 11))
+				.gender(EnumGender.M)
+				.phoneNumber("9876543210")
+				.addressLine1("123 Main St")
+				.addressLine2("Apt 4B")
+				.city("New York")
+				.state("NY")
+				.pinCode("415236")
+				.schoolName("XYZ High School")
+				.boardName("CBSE")
+				.yearOfPassing((short)2000)
+				.percentage(new BigDecimal(65.20))
+				.build();
+		RequestBuilder request = MockMvcRequestBuilders.put("/api/v1/profiles/me")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(toJsonString(requestDTO));
+		MvcResult result = mockMvc.perform(request)
+				.andDo(print())
+				.andReturn();
+		verify(mockProfileService).updateProfile(anyLong(), any(ProfileRequestDTO.class));
+		assertEquals(HttpStatus.BAD_REQUEST.value(), result.getResponse().getStatus());
+		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
+		assertTrue(jsonNode.get("error").asText().equals("Student profile with id 1001 does not exist."));
+	}
+
+	@Test
+	void test_updateProfile_Existing_UserId() throws Exception {
+		Long existingUserId = 11L;
+		CustomPrincipal customPrincipal = CustomPrincipal.builder()
+				.subject(String.valueOf(existingUserId))
+				.build();
+		List<GrantedAuthority> grantedAuthority =
+				List.of(new SimpleGrantedAuthority("APPLICANT"));
+		TestingAuthenticationToken token =
+				new TestingAuthenticationToken(customPrincipal, null, grantedAuthority);
+		SecurityContextHolder.getContext().setAuthentication(token);
+		ProfileRequestDTO requestDTO = ProfileRequestDTO.builder()
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1985, 10, 11))
+				.gender(EnumGender.M)
+				.phoneNumber("9876543210")
+				.addressLine1("123 Main St")
+				.addressLine2("Apt 4B")
+				.city("New York")
+				.state("NY")
+				.pinCode("415236")
+				.schoolName("XYZ High School")
+				.boardName("CBSE")
+				.yearOfPassing((short)2000)
+				.percentage(new BigDecimal(65.20))
+				.build();
+		doNothing().when(mockProfileService).updateProfile(anyLong(), any(ProfileRequestDTO.class));
+		RequestBuilder request = MockMvcRequestBuilders.put("/api/v1/profiles/me")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(toJsonString(requestDTO));
+		MvcResult result = mockMvc.perform(request)
+				.andDo(print())
+				.andReturn();
+		verify(mockProfileService).updateProfile(anyLong(), any(ProfileRequestDTO.class));
+		assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus());
+		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
+		assertTrue(jsonNode.get("status").asText().equals("Student Profile is updated"));
 	}
 
 	private JsonNode toJsonNode(String jsonString) throws JsonMappingException, JsonProcessingException {
