@@ -152,4 +152,76 @@ public class ProfileServiceImplTest {
 		assertEquals(profile.getSchoolName(), responseDTO.getSchoolName());
 		assertEquals(profile.getUserLogin().getEmailAddress(), responseDTO.getEmail());
 	}
+
+	@Test
+	void test_updateProfileForUserId_NonExisting_UserId() {
+		Long nonExistingUserId = 999L;
+		when(mockStudentProfileRepository.findById(anyLong()))
+			.thenReturn(Optional.empty());
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> profileServiceImpl.updateProfile(nonExistingUserId,
+						ProfileRequestDTO.builder().build()));
+		verify(mockStudentProfileRepository).findById(anyLong());
+		assertTrue(ex.getMessage().equals("Student profile with id " + nonExistingUserId + " does not exist."));
+	}
+
+	@Test
+	void test_updateProfileForUserId_Existing_UserId() {
+		Long existingUserId = 1L;
+		ProfileRequestDTO dto = ProfileRequestDTO.builder()
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1985, 10, 11))
+				.gender(EnumGender.M)
+				.phoneNumber("9876543210")
+				.addressLine1("456 Main St")
+				.addressLine2("Apt 2A")
+				.city("New York")
+				.state("NY")
+				.pinCode("452361")
+				.schoolName("XYZ High School")
+				.boardName("CBSE")
+				.yearOfPassing((short)2001)
+				.percentage(new BigDecimal(65.20))
+				.build();
+		StudentProfile foundStudentProfile = StudentProfile.builder()
+				.firstName("John")
+				.lastName("Doe")
+				.dateOfBirth(LocalDate.of(1986, 10, 11))
+				.gender(EnumGender.M)
+				.phoneNumber("7894561230")
+				.addressLine1("123 Main St")
+				.addressLine2("Apt 4B")
+				.city("New York")
+				.state("NY")
+				.pinCode("542136")
+				.schoolName("XYZ High School")
+				.boardName("CBSE")
+				.yearOfPassing((short)2001)
+				.percentage(new BigDecimal(65.20))
+				.build();
+		StudentProfile savedStudentProfile = StudentProfile.builder().build();
+		when(mockStudentProfileRepository.findById(anyLong())).thenReturn(Optional.of(foundStudentProfile));
+		when(mockStudentProfileRepository.save(any(StudentProfile.class))).thenReturn(savedStudentProfile);
+		profileServiceImpl.updateProfile(existingUserId, dto);
+		verify(mockStudentProfileRepository).findById(anyLong());
+
+		ArgumentCaptor<StudentProfile> argCaptorStudentProfile =
+				ArgumentCaptor.forClass(StudentProfile.class);
+		verify(mockStudentProfileRepository).save(argCaptorStudentProfile.capture());
+		StudentProfile toSaveStudentProfile = argCaptorStudentProfile.getValue();
+		assertEquals("John", toSaveStudentProfile.getFirstName());
+		assertEquals("Doe", toSaveStudentProfile.getLastName());
+		assertEquals(LocalDate.of(1985, 10, 11), toSaveStudentProfile.getDateOfBirth());
+		assertEquals(EnumGender.M, toSaveStudentProfile.getGender());
+		assertEquals("9876543210", toSaveStudentProfile.getPhoneNumber());
+		assertEquals("456 Main St", toSaveStudentProfile.getAddressLine1());
+		assertEquals("Apt 2A", toSaveStudentProfile.getAddressLine2());
+		assertEquals("New York", toSaveStudentProfile.getCity());
+		assertEquals("NY", toSaveStudentProfile.getState());
+		assertEquals("452361", toSaveStudentProfile.getPinCode());
+		assertEquals("XYZ High School", toSaveStudentProfile.getSchoolName());
+		assertEquals("CBSE", toSaveStudentProfile.getBoardName());
+		assertEquals(2001, toSaveStudentProfile.getYearOfPassing());
+	}
 }
