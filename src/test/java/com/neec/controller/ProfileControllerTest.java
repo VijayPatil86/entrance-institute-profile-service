@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neec.config.SecurityConfig;
 import com.neec.dto.CustomPrincipal;
-import com.neec.dto.ProfileDTO;
+import com.neec.dto.ProfileRequestDTO;
 import com.neec.enums.EnumGender;
 import com.neec.service.ProfileService;
 import com.neec.util.JwtUtil;
@@ -92,7 +92,7 @@ public class ProfileControllerTest {
 
 	@Test
 	void test_saveProfile_Invalid_Fields_Values() throws Exception {
-		ProfileDTO dto = ProfileDTO.builder()
+		ProfileRequestDTO dto = ProfileRequestDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(2026, 10, 11))
@@ -132,7 +132,7 @@ public class ProfileControllerTest {
 		TestingAuthenticationToken testingAuthenticationToken =
 				new TestingAuthenticationToken(customPrincipal, null);
 		SecurityContextHolder.getContext().setAuthentication(testingAuthenticationToken);
-		ProfileDTO dto = ProfileDTO.builder()
+		ProfileRequestDTO dto = ProfileRequestDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(1985, 10, 11))
@@ -148,14 +148,14 @@ public class ProfileControllerTest {
 				.yearOfPassing((short)2000)
 				.percentage(new BigDecimal(65.20))
 				.build();
-		doNothing().when(mockProfileService).saveProfile(anyLong(), any(ProfileDTO.class));
+		doNothing().when(mockProfileService).saveProfile(anyLong(), any(ProfileRequestDTO.class));
 		RequestBuilder request = MockMvcRequestBuilders.post("/api/v1/profiles")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(toJsonString(dto));
 		MvcResult result = mockMvc.perform(request)
 				.andDo(print())
 				.andReturn();
-		verify(mockProfileService, times(1)).saveProfile(anyLong(), any(ProfileDTO.class));
+		verify(mockProfileService, times(1)).saveProfile(anyLong(), any(ProfileRequestDTO.class));
 		assertEquals(HttpStatus.CREATED.value(), result.getResponse().getStatus());
 		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
 		assertTrue(jsonNode.get("status").asText().equals("Student Profile is created"));
@@ -171,7 +171,7 @@ public class ProfileControllerTest {
 				new TestingAuthenticationToken(customPrincipal, null);
 		SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 		Long userId = 102L;
-		ProfileDTO dto = ProfileDTO.builder()
+		ProfileRequestDTO dto = ProfileRequestDTO.builder()
 				.firstName("John")
 				.lastName("Doe")
 				.dateOfBirth(LocalDate.of(1985, 10, 11))
@@ -188,14 +188,14 @@ public class ProfileControllerTest {
 				.percentage(new BigDecimal(65.20))
 				.build();
 		doThrow(new IllegalArgumentException("Student profile with id " + userId + " already exists."))
-			.when(mockProfileService).saveProfile(anyLong(), any(ProfileDTO.class));
+			.when(mockProfileService).saveProfile(anyLong(), any(ProfileRequestDTO.class));
 		RequestBuilder request = MockMvcRequestBuilders.post("/api/v1/profiles")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(toJsonString(dto));
 		MvcResult result = mockMvc.perform(request)
 				.andDo(print())
 				.andReturn();
-		verify(mockProfileService).saveProfile(anyLong(), any(ProfileDTO.class));
+		verify(mockProfileService).saveProfile(anyLong(), any(ProfileRequestDTO.class));
 		assertEquals(HttpStatus.BAD_REQUEST.value(), result.getResponse().getStatus());
 		JsonNode jsonNode = toJsonNode(result.getResponse().getContentAsString());
 		assertTrue(jsonNode.get("error").asText().equals("Student profile with id " + userId + " already exists."));
@@ -205,7 +205,7 @@ public class ProfileControllerTest {
 		return objectMapper.readTree(jsonString);
 	}
 
-	private String toJsonString(ProfileDTO dto) throws JsonProcessingException {
+	private String toJsonString(ProfileRequestDTO dto) throws JsonProcessingException {
 		return objectMapper.writeValueAsString(dto);
 	}
 }
